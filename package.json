@@ -1,0 +1,60 @@
+{
+  "name": "markdown-annotator",
+  "displayName": "Markdown Annotator",
+  "description": "Add annotations to markdown files with AI assistance (Claude, Gemini, Codex)",
+  "version": "0.1.0",
+  "publisher": "DongHyuk-Ihm",
+  "author": {
+    "name": "DongHyuk Ihm",
+    "url": "https://dhihm.github.io"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dhihm/MD_RedPen"
+  },
+  "homepage": "https://github.com/dhihm/MD_RedPen#readme",
+  "bugs": {
+    "url": "https://github.com/dhihm/MD_RedPen/issues"
+  },
+  "keywords": [
+    "markdown",
+    "annotation",
+    "highlight",
+    "notes",
+    "ai",
+    "claude",
+    "gemini",
+    "codex"
+  ],
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Notebooks"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "markdown-annotator.addAnnotation",
+        "title": "Add Annotation",
+        "category": "Markdown Annotator"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "markdown-annotator.addAnnotation",
+        "key": "cmd+shift+m",
+        "mac": "cmd+shift+m",
+        "win": "ctrl+shift+m",
+        "linux": "ctrl+shift+m",
+        "when": "editorTextFocus && editorLangId == markdown"
+      }
+    ]
+  }
+}
