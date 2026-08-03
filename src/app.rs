@@ -4,12 +4,13 @@ mod codex_flow;
 mod manual_flow;
 mod mouse;
 mod navigation;
+mod revision_flow;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
     app_error::AppError,
-    app_state::{Mode, StatusTone},
+    app_state::{CodexAction, Mode, StatusTone},
     codex::{CodexClient, CodexJob},
     editor::Editor,
     storage::DocumentSnapshot,
@@ -30,6 +31,7 @@ pub struct App {
     no_color: bool,
     codex_client: CodexClient,
     codex_job: Option<CodexJob>,
+    codex_action: Option<CodexAction>,
     spinner_frame: usize,
     review: String,
     mouse_selecting: bool,
@@ -68,6 +70,7 @@ impl App {
             no_color: std::env::var_os("NO_COLOR").is_some(),
             codex_client,
             codex_job: None,
+            codex_action: None,
             spinner_frame: 0,
             review: String::new(),
             mouse_selecting: false,
@@ -87,6 +90,8 @@ impl App {
             Mode::Browse => self.handle_browse(key),
             Mode::Visual => self.handle_visual(key),
             Mode::ManualInput => self.handle_manual_input(key),
+            Mode::CodexChoice => self.handle_codex_choice(key),
+            Mode::RevisionInput => self.handle_revision_input(key),
             Mode::CodexRunning => self.handle_codex_running(key),
             Mode::Review => self.handle_review(key),
         };
@@ -122,6 +127,10 @@ impl App {
     #[must_use]
     pub fn review(&self) -> &str {
         &self.review
+    }
+
+    pub(crate) fn codex_is_revision(&self) -> bool {
+        self.codex_action == Some(CodexAction::Revision)
     }
 
     /// Returns the text currently displayed in the editor panel.

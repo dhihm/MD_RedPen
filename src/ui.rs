@@ -8,7 +8,8 @@ use std::rc::Rc;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::Style,
+    style::{Modifier, Style},
+    text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 
@@ -31,7 +32,11 @@ pub fn render(frame: &mut Frame<'_>, app: &App) {
 
     render_document(frame, app, sections[0]);
     if editing {
-        render_input(frame, app, sections[1]);
+        if app.mode() == Mode::CodexChoice {
+            render_codex_choice(frame, sections[1]);
+        } else {
+            render_input(frame, app, sections[1]);
+        }
         render_status(frame, app, sections[2], compact);
     } else {
         render_status(frame, app, sections[1], compact);
@@ -81,7 +86,10 @@ fn screen_sections(app: &App, area: Rect) -> Rc<[Rect]> {
 }
 
 fn is_editing(app: &App) -> bool {
-    matches!(app.mode(), Mode::ManualInput | Mode::Review)
+    matches!(
+        app.mode(),
+        Mode::ManualInput | Mode::CodexChoice | Mode::RevisionInput | Mode::Review
+    )
 }
 
 const fn is_compact(area: Rect) -> bool {
@@ -90,10 +98,12 @@ const fn is_compact(area: Rect) -> bool {
 
 fn render_input(frame: &mut Frame<'_>, app: &App, area: Rect) {
     let value = format!("{}▌", app.editing_text());
-    let title = if app.mode() == Mode::Review {
-        " Codex review · Enter save · Esc discard "
-    } else {
-        " Manual endnote · Enter save · Esc cancel "
+    let title = match app.mode() {
+        Mode::RevisionInput => " Revision instruction · Enter send · Esc cancel ",
+        Mode::Review if app.codex_is_revision() => " Codex revision · Enter apply · Esc discard ",
+        Mode::Review => " Codex endnote · Enter save · Esc discard ",
+        Mode::ManualInput => " Manual endnote · Enter save · Esc cancel ",
+        Mode::Browse | Mode::Visual | Mode::CodexChoice | Mode::CodexRunning => "",
     };
     let editor = Paragraph::new(value)
         .style(
@@ -109,4 +119,33 @@ fn render_input(frame: &mut Frame<'_>, app: &App, area: Rect) {
         )
         .wrap(Wrap { trim: false });
     frame.render_widget(editor, area);
+}
+
+fn render_codex_choice(frame: &mut Frame<'_>, area: Rect) {
+    let key_style = Style::default()
+        .fg(theme::FOCUS_BLUE)
+        .add_modifier(Modifier::BOLD);
+    let actions = vec![
+        Line::from(vec![
+            Span::styled("r", key_style),
+            Span::raw("  Revise sentence with your instruction"),
+        ]),
+        Line::from(vec![
+            Span::styled("e", key_style),
+            Span::raw("  Generate automatic endnote"),
+        ]),
+    ];
+    let panel = Paragraph::new(actions)
+        .style(
+            Style::default()
+                .fg(theme::TEXT_PRIMARY)
+                .bg(theme::NOTE_SURFACE),
+        )
+        .block(
+            Block::default()
+                .title(" Codex action · Esc cancel ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme::FOCUS_BLUE)),
+        );
+    frame.render_widget(panel, area);
 }

@@ -8,7 +8,8 @@ const KEY_HELP: &str = "\
 Keys:
   v  start visual selection
   a  add manual highlighted endnote
-  c  ask Codex for an endnote
+  c  open Codex action chooser
+  r/e  revise sentence or generate endnote
   w  select current word
   Up/Down or j/k  move by paragraph
   Left/Right or h/l  move by grapheme

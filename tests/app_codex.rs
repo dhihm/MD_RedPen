@@ -33,6 +33,7 @@ fn codex_result_requires_review_before_commit() -> Result<(), Box<dyn std::error
 
     app.handle_key(key(KeyCode::Char('w')));
     app.handle_key(key(KeyCode::Char('c')));
+    app.handle_key(key(KeyCode::Char('e')));
 
     assert_eq!(app.mode(), Mode::CodexRunning);
     assert_eq!(fs::read_to_string(&document)?, "RDMA는 빠르다.\n");
@@ -101,6 +102,7 @@ fn codex_draft_can_commit_prose_after_fenced_managed_marker_example()
     }
     app.handle_key(key(KeyCode::Char('w')));
     app.handle_key(key(KeyCode::Char('c')));
+    app.handle_key(key(KeyCode::Char('e')));
     app.wait_for_codex()?;
     assert_eq!(app.mode(), Mode::Review);
 

@@ -124,7 +124,7 @@ Terminal spacing is expressed in cells.
 
 ### Status bar
 
-- Left: mode (`BROWSE`, `VISUAL`, `INPUT`, `CODEX`, `REVIEW`).
+- Left: mode (`BROWSE`, `VISUAL`, `INPUT`, `PROMPT`, `CODEX`, `REVIEW`).
 - Center: transient success/error message.
 - Right: concise keys valid in the current mode.
 - No animation except a deterministic spinner while Codex is running.
@@ -138,10 +138,16 @@ Terminal spacing is expressed in cells.
 
 ### Codex progress and review
 
-- Running state shows `Codex is drafting an endnote…` and a spinner.
+- Pressing `c` opens a bordered action chooser with revision and automatic
+  endnote options; neither option starts until the user selects it.
+- Revision mode collects one explicit prose-editing instruction before Codex
+  starts.
+- Running state identifies whether Codex is drafting a revision or an endnote
+  and shows a spinner.
 - Escape cancels the child process and returns to the unchanged document.
-- Returned text opens in the same review editor; no file write occurs before
-  Enter.
+- Returned text opens in the same review editor. Enter applies a revision to
+  the selected source range or saves an endnote, depending on the chosen action.
+- No file write occurs before review acceptance.
 - Codex errors retain the selection and show a typed error status.
 
 ### Endnote navigation
@@ -163,10 +169,14 @@ Terminal spacing is expressed in cells.
 | `v` | Browse | Start visual selection |
 | `w` | Browse | Select the current rendered word |
 | `a` | Visual | Open manual endnote editor |
-| `c` | Visual | Ask Codex for an explanation |
+| `c` | Visual | Open the Codex action chooser |
+| `r` | Codex choice | Enter a sentence-revision instruction |
+| `e` | Codex choice | Generate an automatic explanatory endnote |
+| Enter | Revision input | Send the instruction to Codex |
 | Enter | Browse | Follow a RedPen annotation link |
-| Enter | Input/Review | Accept non-empty note and atomically save |
-| Escape | Visual/Input/Review/Codex | Cancel current transient operation |
+| Enter | Revision review | Atomically replace the selected source |
+| Enter | Manual input/Endnote review | Accept non-empty note and atomically save |
+| Escape | Visual/Choice/Input/Review/Codex | Cancel current transient operation |
 | `b` | Browse | Return from endnote to body |
 | `q` / Ctrl-C | Browse | Restore terminal and quit |
 

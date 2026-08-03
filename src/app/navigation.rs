@@ -47,7 +47,10 @@ impl App {
                 self.input.clear();
                 self.set_neutral("미주 내용을 입력하고 Enter로 저장하세요");
             }
-            KeyCode::Char('c') => self.start_codex()?,
+            KeyCode::Char('c') => {
+                self.mode = Mode::CodexChoice;
+                self.set_neutral("Codex 작업 선택 · r 문장 수정 · e 자동 미주 · Esc 취소");
+            }
             KeyCode::Esc => {
                 self.editor.clear_visual();
                 self.mode = Mode::Browse;

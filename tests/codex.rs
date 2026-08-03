@@ -52,5 +52,16 @@ fn uses_noninteractive_read_only_exec_contract() -> Result<(), Box<dyn std::erro
     assert!(prompt.contains("<selection>\nRDMA\n</selection>"));
     assert!(prompt.contains("<context>\nRDMA는 빠르다.\n</context>"));
     assert_eq!(fs::read_to_string(&env_path)?, "|");
+
+    let revision = CodexRequest::revise(
+        "느린 문장",
+        "느린 문장을 정확하게 고칩니다.",
+        "더 구체적으로 바꿔 줘",
+    );
+    assert_eq!(client.start(&revision)?.wait()?, "가짜 설명");
+    let revision_prompt = fs::read_to_string(&stdin_path)?;
+    assert!(revision_prompt.contains("<revision_instruction>\n더 구체적으로 바꿔 줘"));
+    assert!(revision_prompt.contains("<selection>\n느린 문장\n</selection>"));
+    assert!(revision_prompt.contains("replacement"));
     Ok(())
 }

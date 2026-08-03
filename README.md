@@ -18,10 +18,13 @@ Markdown renderer.
    select the current word.
 3. Choose a note workflow:
    - `a` writes a manual endnote.
-   - `c` asks a Codex CLI authenticated through a ChatGPT subscription for an
-     explanatory draft.
-4. Review and edit the draft.
-5. Press Enter to save the highlighted body link and its endnote together.
+   - `c` opens the Codex action chooser.
+     - `r` accepts a revision instruction, asks Codex for replacement prose,
+       and opens the result for review.
+     - `e` generates the same automatic explanatory endnote as before.
+4. Review and edit the Codex draft.
+5. Press Enter to atomically apply a reviewed revision or save the highlighted
+   body link and its endnote.
 
 The saved structure remains human-readable Markdown. This English-only example
 shows the link, anchor, and managed note block:
@@ -95,11 +98,15 @@ md-redpen --help
 | `v` | Browse | Start a visual selection at the cursor |
 | `w` | Browse | Select the current word |
 | `a` | Visual | Write a manual endnote |
-| `c` | Visual | Request a Codex explanation |
-| Enter | Input, Review | Atomically save the reviewed endnote |
+| `c` | Visual | Open the Codex action chooser |
+| `r` | Codex choice | Enter an instruction for a sentence revision |
+| `e` | Codex choice | Generate an automatic explanatory endnote |
+| Enter | Revision input | Send the instruction to Codex |
+| Enter | Revision review | Atomically replace the selected source |
+| Enter | Manual input, Endnote review | Atomically save the reviewed endnote |
 | Enter | Browse | Follow a highlighted link to its endnote |
 | `b` | Browse | Return from an endnote to the body |
-| Escape | Visual, Input, Review, Codex | Cancel the current operation |
+| Escape | Visual, Choice, Input, Review, Codex | Cancel the current operation |
 | `q`, Ctrl-C | Browse | Restore the terminal and quit |
 
 Korean, CJK, emoji, and combining characters are handled by Unicode grapheme
@@ -124,7 +131,8 @@ codex exec
 - `codex login status` must explicitly confirm a ChatGPT login.
 - `CODEX_API_KEY` and `OPENAI_API_KEY` are removed from the child process.
 - Codex runs in an empty temporary working directory with a read-only sandbox.
-- Only the selected text and the source line containing it are sent to Codex.
+- Only the selected text, the source line containing it, and any explicit
+  revision instruction are sent to Codex.
 - Standard output and standard error are each limited to 64 KiB.
 - The default timeout is 120 seconds.
 - Escape, Ctrl-C, errors, and normal shutdown all terminate the Codex process
@@ -146,6 +154,8 @@ Tests and internal wrappers can override the executable path with
 
 ## Data safety
 
+- A reviewed sentence revision replaces only the selected source range in one
+  save transaction.
 - The body link and endnote are created in one save transaction.
 - Saving stops if another editor changes the file bytes after MD RedPen opens
   it.
@@ -153,8 +163,8 @@ Tests and internal wrappers can override the executable path with
   same directory is synchronized and atomically renamed.
 - Selections that overlap an existing Markdown link or MD RedPen highlight are
   rejected.
-- A Codex draft is not written until it is accepted with Enter on the Review
-  screen.
+- A Codex revision or endnote draft is not written until it is accepted with
+  Enter on the Review screen.
 - Parsing, selection, Codex, and save failures preserve the original file
   bytes.
 - Managed-note markers shown inside fenced or inline code are treated as
@@ -205,7 +215,9 @@ The test suite covers:
 - External file conflict detection and byte preservation
 - CLI help and typed path errors
 - Safe Codex arguments, standard-input prompts, and API-key removal
+- Explicit Codex revision and automatic-endnote branch selection
 - The invariant that no file changes occur before Codex review
+- Atomic selected-source replacement with external-change protection
 
 ## Migration from the VS Code prototype
 

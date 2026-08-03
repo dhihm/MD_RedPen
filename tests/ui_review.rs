@@ -39,7 +39,8 @@ fn empty_document_has_centered_message() -> Result<(), Box<dyn std::error::Error
 
     let buffer = render(&app, 100, 28)?;
     let text = buffer_text(&buffer);
-    let empty_cell = find_cell(&buffer, "E").ok_or("empty message must render")?;
+    let empty_row = find_row(&buffer, "Empty Markdown document").ok_or("empty row must render")?;
+    let empty_cell = find_cell(&buffer, empty_row, "E").ok_or("empty message must render")?;
 
     assert!(text.contains("Empty Markdown document"));
     assert!(empty_cell.0 > 20);
@@ -97,6 +98,7 @@ fn codex_running_renders_deterministic_spinner() -> Result<(), Box<dyn std::erro
 
     app.handle_key(key(KeyCode::Char('w')));
     app.handle_key(key(KeyCode::Char('c')));
+    app.handle_key(key(KeyCode::Char('e')));
     assert_eq!(app.mode(), Mode::CodexRunning);
 
     let first = buffer_text(&render(&app, 100, 28)?);
@@ -120,9 +122,11 @@ fn endnote_title_and_destination_use_semantic_focus() -> Result<(), Box<dyn std:
     app.handle_key(key(KeyCode::Enter));
 
     let saved = render(&app, 100, 28)?;
-    let (_, _, title) = find_cell(&saved, "1").ok_or("numbered title must render")?;
+    let title_row = find_row(&saved, "1) RDMA").ok_or("numbered title row must render")?;
+    let (_, _, title) = find_cell(&saved, title_row, "1").ok_or("numbered title must render")?;
     assert!(title.modifier.contains(Modifier::BOLD));
-    let (_, _, note) = find_cell(&saved, "직").ok_or("manual note must render")?;
+    let note_row = find_row(&saved, "직").ok_or("manual note row must render")?;
+    let (_, _, note) = find_cell(&saved, note_row, "직").ok_or("manual note must render")?;
     if !app.no_color() {
         assert_eq!(title.fg, theme::TEXT_PRIMARY);
         assert_eq!(title.bg, theme::NOTE_SURFACE);
@@ -133,7 +137,9 @@ fn endnote_title_and_destination_use_semantic_focus() -> Result<(), Box<dyn std:
 
     app.handle_key(key(KeyCode::Enter));
     let focused = render(&app, 100, 28)?;
-    let (_, _, destination) = find_cell(&focused, "1").ok_or("focused title must render")?;
+    let destination_row = find_row(&focused, "1) RDMA").ok_or("focused title row must render")?;
+    let (_, _, destination) =
+        find_cell(&focused, destination_row, "1").ok_or("focused title must render")?;
     if !app.no_color() {
         assert_eq!(destination.fg, theme::FOCUS_BLUE);
     }
@@ -150,7 +156,7 @@ fn active_selection_meets_normal_text_contrast() {
 }
 
 fn app_for(source: &str) -> Result<(tempfile::TempDir, App), Box<dyn std::error::Error>> {
-    let directory = tempfile::tempdir()?;
+    let directory = tempfile::Builder::new().prefix("fixture-1-").tempdir()?;
     let document = directory.path().join("document.md");
     fs::write(&document, source)?;
     let snapshot = DocumentSnapshot::load(&document)?;
@@ -197,16 +203,16 @@ fn row_inner_text(buffer: &Buffer, row: u16) -> String {
         .collect()
 }
 
-fn find_cell<'a>(buffer: &'a Buffer, symbol: &str) -> Option<(u16, u16, &'a Cell)> {
+fn find_cell<'a>(buffer: &'a Buffer, row: u16, symbol: &str) -> Option<(u16, u16, &'a Cell)> {
+    let width = usize::from(buffer.area().width);
     buffer
         .content()
         .iter()
+        .skip(usize::from(row) * width)
+        .take(width)
         .enumerate()
         .find(|(_, cell)| cell.symbol() == symbol)
-        .map(|(index, cell)| {
-            let width = buffer.area().width;
-            (index as u16 % width, index as u16 / width, cell)
-        })
+        .map(|(column, cell)| (column as u16, row, cell))
 }
 
 fn contrast_ratio(foreground: Color, background: Color) -> f64 {

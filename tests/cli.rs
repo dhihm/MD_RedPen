@@ -14,6 +14,10 @@ fn help_describes_selection_keys() {
         .stdout(predicate::str::contains(
             "a  add manual highlighted endnote",
         ))
+        .stdout(predicate::str::contains("c  open Codex action chooser"))
+        .stdout(predicate::str::contains(
+            "r/e  revise sentence or generate endnote",
+        ))
         .stdout(predicate::str::contains("mouse drag  select rendered text"));
 }
 

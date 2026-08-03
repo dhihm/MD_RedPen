@@ -7,12 +7,30 @@ use super::App;
 use crate::{
     annotation::NoteKind,
     app_error::AppError,
-    app_state::{Mode, StatusTone},
+    app_state::{CodexAction, Mode, StatusTone},
     codex::CodexRequest,
 };
 
 impl App {
     pub(super) fn start_codex(&mut self) -> Result<(), AppError> {
+        let (selected, context) = self.codex_request_data()?;
+        self.launch_codex(
+            CodexAction::Endnote,
+            &CodexRequest::explain(selected, context),
+            "Codex가 미주 초안을 작성 중…",
+        )
+    }
+
+    pub(super) fn start_revision_codex(&mut self, instruction: &str) -> Result<(), AppError> {
+        let (selected, context) = self.codex_request_data()?;
+        self.launch_codex(
+            CodexAction::Revision,
+            &CodexRequest::revise(selected, context, instruction),
+            "Codex가 문장 수정안을 작성 중…",
+        )
+    }
+
+    fn codex_request_data(&self) -> Result<(String, String), AppError> {
         let selection = self
             .editor
             .selection_source_range()
@@ -24,14 +42,21 @@ impl App {
             .ok_or(AppError::MissingSelection)?
             .to_owned();
         let context = line_context(self.snapshot.source(), selection);
+        Ok((selected, context))
+    }
+
+    fn launch_codex(
+        &mut self,
+        action: CodexAction,
+        request: &CodexRequest,
+        status: &str,
+    ) -> Result<(), AppError> {
         self.codex_client.check_chatgpt_login()?;
-        self.codex_job = Some(
-            self.codex_client
-                .start(&CodexRequest::explain(selected, context))?,
-        );
+        self.codex_job = Some(self.codex_client.start(request)?);
+        self.codex_action = Some(action);
         self.mode = Mode::CodexRunning;
         self.spinner_frame = 0;
-        self.status = "Codex가 미주 초안을 작성 중…".to_owned();
+        self.status = status.to_owned();
         self.status_tone = StatusTone::Neutral;
         Ok(())
     }
@@ -39,6 +64,7 @@ impl App {
     pub(super) fn handle_codex_running(&mut self, key: KeyEvent) -> Result<(), AppError> {
         if key.code == KeyCode::Esc {
             self.cancel_codex()?;
+            self.codex_action = None;
             self.mode = Mode::Visual;
             self.status = "Codex 요청 취소됨 · 선택은 유지됩니다".to_owned();
             self.status_tone = StatusTone::Neutral;
@@ -53,11 +79,18 @@ impl App {
                     self.set_error("Codex review cannot be empty");
                     return Ok(());
                 }
-                let note = self.review.trim().to_owned();
-                self.commit_note(NoteKind::Explanation, &note)?;
+                let draft = self.review.trim().to_owned();
+                match self.codex_action.ok_or(AppError::MissingSelection)? {
+                    CodexAction::Endnote => {
+                        self.commit_note(NoteKind::Explanation, &draft)?;
+                        self.codex_action = None;
+                    }
+                    CodexAction::Revision => self.commit_revision(&draft)?,
+                }
             }
             KeyCode::Esc => {
                 self.review.clear();
+                self.codex_action = None;
                 self.mode = Mode::Visual;
                 self.status = "Codex 초안 폐기됨 · 선택은 유지됩니다".to_owned();
                 self.status_tone = StatusTone::Neutral;
@@ -120,12 +153,22 @@ impl App {
     fn accept_codex_result(&mut self, result: Result<String, crate::codex::CodexError>) {
         match result {
             Ok(note) => {
+                let Some(action) = self.codex_action else {
+                    self.mode = Mode::Visual;
+                    self.set_error("Codex result has no pending action");
+                    return;
+                };
                 self.review = note;
                 self.mode = Mode::Review;
-                self.status = "Codex 초안 검토 · Enter 저장 · Esc 폐기".to_owned();
+                self.status = match action {
+                    CodexAction::Endnote => "Codex 미주 초안 검토 · Enter 저장 · Esc 폐기",
+                    CodexAction::Revision => "Codex 수정안 검토 · Enter 적용 · Esc 폐기",
+                }
+                .to_owned();
                 self.status_tone = StatusTone::Neutral;
             }
             Err(error) => {
+                self.codex_action = None;
                 self.mode = Mode::Visual;
                 self.status = error.to_string();
                 self.status_tone = StatusTone::Error;
