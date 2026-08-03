@@ -33,7 +33,9 @@ shows the link, anchor, and managed note block:
 ## MD RedPen Notes
 
 <a id="rp-note-019fc502-c508-7750-ae68-dc807f695d5a"></a>
-1. **Explanation**: A device can access memory without routing data through the CPU.
+### 1) RDMA
+
+A device can access memory without routing data through the CPU.
 
 [rp-019fc502-c508-7750-ae68-dc807f695d5a]: #rp-note-019fc502-c508-7750-ae68-dc807f695d5a
 <!-- md-redpen:notes:end -->
@@ -41,6 +43,9 @@ shows the link, anchor, and managed note block:
 
 The `<mark>` element preserves the highlighter meaning, while the selected prose
 becomes a link to the matching `#rp-note-...` anchor.
+
+Each endnote heading is numbered in document order and uses at most 24 Unicode
+graphemes from the selected prose. Longer selections end with an ellipsis.
 
 ## Requirements
 
@@ -86,6 +91,7 @@ md-redpen --help
 | `Up` / `Down`, `k` / `j` | Browse | Move to the previous or next Markdown paragraph |
 | `Left` / `Right`, `h` / `l` | Browse, Visual | Move or extend the selection by one selectable grapheme |
 | Left-button drag | Browse, Visual | Select the exact rendered grapheme cells under the pointer |
+| Mouse wheel | Browse, Visual | Scroll the rendered document by three terminal rows |
 | `v` | Browse | Start a visual selection at the cursor |
 | `w` | Browse | Select the current word |
 | `a` | Visual | Write a manual endnote |

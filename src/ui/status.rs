@@ -93,14 +93,12 @@ pub(super) fn render_too_small(frame: &mut Frame<'_>, area: Rect) {
 
 const fn help_text(mode: Mode, compact: bool) -> &'static str {
     match (mode, compact) {
-        (Mode::Browse, true) => "↑/↓ paragraph · drag select · q quit",
+        (Mode::Browse, true) => "wheel · drag select · q quit",
         (Mode::Visual, true) => "h/l extend · a note · c Codex · Esc",
         (Mode::ManualInput, true) => "Enter save · Esc cancel",
         (Mode::CodexRunning, true) => "Esc cancel",
         (Mode::Review, true) => "Enter save · Esc discard",
-        (Mode::Browse, false) => {
-            "↑/↓ paragraph  drag select  v/w select  Enter follow  b back  q quit"
-        }
+        (Mode::Browse, false) => "↑/↓ paragraph  wheel  drag select  Enter follow  b back  q quit",
         (Mode::Visual, false) => "←/→ or h/l extend  a manual  c Codex  Esc cancel",
         (Mode::ManualInput, false) => "type note  Enter atomic save  Esc cancel",
         (Mode::CodexRunning, false) => "Codex running  Esc cancel",

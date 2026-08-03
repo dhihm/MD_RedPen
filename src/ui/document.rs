@@ -71,6 +71,12 @@ pub(super) fn hit_test(app: &App, area: Rect, column: u16, row: u16) -> Option<u
     (UnicodeWidthStr::width(grapheme.text()) > 1).then_some(index)
 }
 
+pub(super) fn scroll_bounds(app: &App, area: Rect) -> (u16, u16) {
+    let inner = document_block(app).inner(area);
+    let maximum = max_scroll_offset(app, inner);
+    (scroll_offset(app, inner).min(maximum), maximum)
+}
+
 fn decode_hit(app: &App, cell: &ratatui::buffer::Cell) -> Option<usize> {
     let Color::Rgb(red, green, blue) = cell.fg else {
         return None;
@@ -94,8 +100,20 @@ fn document_block(app: &App) -> Block<'static> {
 }
 
 fn scroll_offset(app: &App, inner: Rect) -> u16 {
+    if let Some(offset) = app.viewport_scroll() {
+        return offset.min(max_scroll_offset(app, inner));
+    }
     let end = app.editor().cursor().saturating_add(1);
     let lines = document_lines(app, Some(end), |_, _| Style::default());
+    let rows = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .line_count(inner.width);
+    let offset = rows.saturating_sub(usize::from(inner.height));
+    u16::try_from(offset).unwrap_or(u16::MAX)
+}
+
+fn max_scroll_offset(app: &App, inner: Rect) -> u16 {
+    let lines = document_lines(app, None, |_, _| Style::default());
     let rows = Paragraph::new(lines)
         .wrap(Wrap { trim: false })
         .line_count(inner.width);

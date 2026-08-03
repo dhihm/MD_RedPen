@@ -13,6 +13,7 @@ Keys:
   Up/Down or j/k  move by paragraph
   Left/Right or h/l  move by grapheme
   mouse drag  select rendered text
+  mouse wheel  scroll the document
   Enter  follow annotation link
   b  return from endnote
   q  quit";

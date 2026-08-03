@@ -47,6 +47,15 @@ pub fn document_hit_test(app: &App, area: Rect, column: u16, row: u16) -> Option
     document::hit_test(app, screen_sections(app, area)[0], column, row)
 }
 
+/// Returns the current and maximum rendered document scroll offsets.
+#[must_use]
+pub fn document_scroll_bounds(app: &App, area: Rect) -> (u16, u16) {
+    if area.width < 50 || area.height < 12 {
+        return (0, 0);
+    }
+    document::scroll_bounds(app, screen_sections(app, area)[0])
+}
+
 fn screen_sections(app: &App, area: Rect) -> Rc<[Rect]> {
     let editing = is_editing(app);
     let compact = is_compact(area);

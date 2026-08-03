@@ -33,6 +33,7 @@ pub struct App {
     spinner_frame: usize,
     review: String,
     mouse_selecting: bool,
+    viewport_scroll: Option<u16>,
 }
 
 impl App {
@@ -70,12 +71,14 @@ impl App {
             spinner_frame: 0,
             review: String::new(),
             mouse_selecting: false,
+            viewport_scroll: None,
         })
     }
 
     /// Applies one terminal key event.
     pub fn handle_key(&mut self, key: KeyEvent) {
         self.mouse_selecting = false;
+        self.viewport_scroll = None;
         if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
             self.should_quit = true;
             return;
@@ -97,6 +100,10 @@ impl App {
     #[must_use]
     pub const fn editor(&self) -> &Editor {
         &self.editor
+    }
+
+    pub(crate) const fn viewport_scroll(&self) -> Option<u16> {
+        self.viewport_scroll
     }
 
     /// Returns the current mode.

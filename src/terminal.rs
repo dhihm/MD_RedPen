@@ -62,8 +62,9 @@ fn event_loop(terminal: &mut TuiTerminal, app: &mut App) -> io::Result<()> {
             Event::Mouse(mouse) => {
                 let size = terminal.size()?;
                 let area = ratatui::layout::Rect::new(0, 0, size.width, size.height);
+                let (scroll_offset, max_scroll_offset) = ui::document_scroll_bounds(app, area);
                 let hit = ui::document_hit_test(app, area, mouse.column, mouse.row);
-                app.handle_mouse(mouse.kind, hit);
+                app.handle_mouse(mouse.kind, hit, scroll_offset, max_scroll_offset);
             }
             Event::FocusGained
             | Event::FocusLost

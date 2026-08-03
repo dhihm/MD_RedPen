@@ -70,7 +70,7 @@ spacing rather than font substitution.
 | Persisted annotation | `MARKER_YELLOW` background, `MARKER_TEXT` |
 | Active selection | `SELECTION_BLUE` background, `SELECTION_TEXT` |
 | Focused annotation | persisted style plus `UNDERLINED` |
-| Endnote label | `BOLD`, `MARKER_YELLOW` foreground |
+| Numbered endnote title | `BOLD`, `TEXT_PRIMARY` foreground |
 | Status/help | `TEXT_MUTED`; current mode is `BOLD` |
 | Error | `ERROR_RED`, `BOLD` |
 
@@ -99,6 +99,8 @@ Terminal spacing is expressed in cells.
   active. Never clip document bytes silently.
 - Cursor movement automatically scrolls the document enough to keep the focused
   paragraph visible.
+- The mouse wheel scrolls the viewport by three rendered rows without moving
+  the editor cursor.
 - Mouse hit testing replays the same Ratatui wrapping and scroll offset used by
   the visible paragraph. Source ranges never derive directly from raw screen
   columns.
@@ -147,6 +149,8 @@ Terminal spacing is expressed in cells.
 - Enter on a persisted annotation jumps to the linked managed endnote.
 - `b` returns to the body anchor.
 - The destination receives focus blue; the body highlight remains marker yellow.
+- Every endnote title is prefixed with its document-order number and previews at
+  most 24 Unicode graphemes from the selected prose.
 
 ## 6. Interaction and Feedback
 
@@ -155,6 +159,7 @@ Terminal spacing is expressed in cells.
 | `↑` / `↓`, `k` / `j` | Browse | Jump to the previous/next Markdown paragraph |
 | `←` / `→`, `h` / `l` | Browse/Visual | Move by selectable grapheme |
 | Left mouse drag | Browse/Visual | Select exact rendered grapheme cells |
+| Mouse wheel | Browse/Visual | Scroll the document by three rendered rows |
 | `v` | Browse | Start visual selection |
 | `w` | Browse | Select the current rendered word |
 | `a` | Visual | Open manual endnote editor |
@@ -179,7 +184,7 @@ Feedback is immediate and state-bearing. No decorative transitions or motion.
 ### Constraints
 
 - Every feature is keyboard accessible.
-- Color is never the only signal: modes, labels, underline, and prefixes remain.
+- Color is never the only signal: modes, titles, underline, and prefixes remain.
 - Marker text uses a dark foreground on yellow for strong contrast.
 - CJK and emoji widths are measured with Unicode-aware libraries and verified in
   a real xterm.js terminal.

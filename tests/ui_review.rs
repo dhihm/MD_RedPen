@@ -110,7 +110,7 @@ fn codex_running_renders_deterministic_spinner() -> Result<(), Box<dyn std::erro
 }
 
 #[test]
-fn endnote_label_and_destination_use_semantic_focus() -> Result<(), Box<dyn std::error::Error>> {
+fn endnote_title_and_destination_use_semantic_focus() -> Result<(), Box<dyn std::error::Error>> {
     let (_directory, mut app) = app_for("RDMA는 빠르다.\n")?;
     app.handle_key(key(KeyCode::Char('w')));
     app.handle_key(key(KeyCode::Char('a')));
@@ -120,12 +120,12 @@ fn endnote_label_and_destination_use_semantic_focus() -> Result<(), Box<dyn std:
     app.handle_key(key(KeyCode::Enter));
 
     let saved = render(&app, 100, 28)?;
-    let (_, _, label) = find_cell(&saved, "사").ok_or("manual label must render")?;
-    assert!(label.modifier.contains(Modifier::BOLD));
+    let (_, _, title) = find_cell(&saved, "1").ok_or("numbered title must render")?;
+    assert!(title.modifier.contains(Modifier::BOLD));
     let (_, _, note) = find_cell(&saved, "직").ok_or("manual note must render")?;
     if !app.no_color() {
-        assert_eq!(label.fg, theme::MARKER_YELLOW);
-        assert_eq!(label.bg, theme::NOTE_SURFACE);
+        assert_eq!(title.fg, theme::TEXT_PRIMARY);
+        assert_eq!(title.bg, theme::NOTE_SURFACE);
         assert_eq!(note.bg, theme::NOTE_SURFACE);
     }
     let heading_row = find_row(&saved, "MD RedPen Notes").ok_or("notes heading must render")?;
@@ -133,7 +133,7 @@ fn endnote_label_and_destination_use_semantic_focus() -> Result<(), Box<dyn std:
 
     app.handle_key(key(KeyCode::Enter));
     let focused = render(&app, 100, 28)?;
-    let (_, _, destination) = find_cell(&focused, "사").ok_or("focused label must render")?;
+    let (_, _, destination) = find_cell(&focused, "1").ok_or("focused title must render")?;
     if !app.no_color() {
         assert_eq!(destination.fg, theme::FOCUS_BLUE);
     }

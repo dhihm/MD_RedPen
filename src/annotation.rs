@@ -3,10 +3,12 @@
 use std::{fmt, ops::Range};
 
 use thiserror::Error;
+use unicode_segmentation::UnicodeSegmentation;
 use uuid::Uuid;
 
 pub(crate) const NOTES_START: &str = "<!-- md-redpen:notes:start v=1 -->";
 pub(crate) const NOTES_END: &str = "<!-- md-redpen:notes:end -->";
+const NOTE_TITLE_MAX_GRAPHEMES: usize = 24;
 
 /// Stable Markdown-safe annotation identity.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,17 +58,6 @@ pub enum NoteKind {
     Expansion,
     /// Store user-authored context.
     Manual,
-}
-
-impl NoteKind {
-    const fn label(self) -> &'static str {
-        match self {
-            Self::Explanation => "부연 설명",
-            Self::Revision => "수정 제안",
-            Self::Expansion => "내용 추가",
-            Self::Manual => "사용자 메모",
-        }
-    }
 }
 
 /// One requested body-link and endnote transaction.
@@ -137,7 +128,7 @@ pub fn annotate(source: &str, request: &AnnotationRequest<'_>) -> Result<String,
     output.push_str(&highlighted);
     output.push_str(&source[request.selection.end..]);
 
-    let note = format_note(request);
+    let note = format_note(request, selected, next_note_number(source));
     if let Some(notes) = crate::annotation_context::managed_notes_range(&output) {
         output.insert_str(notes.end, &note);
     } else {
@@ -183,12 +174,66 @@ fn validate_request(source: &str, request: &AnnotationRequest<'_>) -> Result<(),
     Ok(())
 }
 
-fn format_note(request: &AnnotationRequest<'_>) -> String {
+fn format_note(request: &AnnotationRequest<'_>, selected: &str, number: usize) -> String {
     format!(
-        "<a id=\"rp-note-{id_suffix}\"></a>\n1. **{label}**: {note}\n\n[{id}]: #rp-note-{id_suffix}\n",
+        "<a id=\"rp-note-{id_suffix}\"></a>\n### {number}) {title}\n\n{note}\n\n[{id}]: #rp-note-{id_suffix}\n",
         id = request.id,
         id_suffix = request.id.0.trim_start_matches("rp-"),
-        label = request.kind.label(),
+        title = selection_title(selected),
         note = request.note.trim(),
     )
+}
+
+fn next_note_number(source: &str) -> usize {
+    let Some(range) = crate::annotation_context::managed_notes_range(source) else {
+        return 1;
+    };
+    source
+        .get(range)
+        .map_or(0, |notes| notes.matches("<a id=\"rp-note-").count())
+        .saturating_add(1)
+}
+
+fn selection_title(selected: &str) -> String {
+    let compact = selected.split_whitespace().collect::<Vec<_>>().join(" ");
+    let graphemes = compact.graphemes(true).collect::<Vec<_>>();
+    let title = if graphemes.len() > NOTE_TITLE_MAX_GRAPHEMES {
+        let mut shortened = graphemes[..NOTE_TITLE_MAX_GRAPHEMES - 1].concat();
+        shortened.push('…');
+        shortened
+    } else {
+        compact
+    };
+    escape_markdown_title(&title)
+}
+
+fn escape_markdown_title(title: &str) -> String {
+    let mut escaped = String::with_capacity(title.len());
+    for character in title.chars() {
+        if matches!(
+            character,
+            '\\' | '`'
+                | '*'
+                | '_'
+                | '{'
+                | '}'
+                | '['
+                | ']'
+                | '<'
+                | '>'
+                | '('
+                | ')'
+                | '#'
+                | '+'
+                | '-'
+                | '.'
+                | '!'
+                | '|'
+                | '~'
+        ) {
+            escaped.push('\\');
+        }
+        escaped.push(character);
+    }
+    escaped
 }

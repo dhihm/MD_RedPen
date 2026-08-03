@@ -21,12 +21,64 @@ fn creates_clickable_mark_and_managed_endnote() -> Result<(), Box<dyn std::error
         "<!-- md-redpen:notes:start v=1 -->\n",
         "## MD RedPen Notes\n\n",
         "<a id=\"rp-note-7k3m\"></a>\n",
-        "1. **부연 설명**: 직접 쓴 설명\n\n",
+        "### 1) 한글 문장\n\n",
+        "직접 쓴 설명\n\n",
         "[rp-7k3m]: #rp-note-7k3m\n",
         "<!-- md-redpen:notes:end -->\n",
     );
 
     assert_eq!(actual, expected);
+    Ok(())
+}
+
+#[test]
+fn truncates_endnote_title_without_splitting_cjk() -> Result<(), Box<dyn std::error::Error>> {
+    let selected = "가".repeat(30);
+    let source = format!("{selected} 뒤 문장입니다.\n");
+    let request = AnnotationRequest {
+        id: AnnotationId::parse("rp-title")?,
+        kind: NoteKind::Explanation,
+        note: "설명",
+        selection: 0..selected.len(),
+    };
+
+    let actual = annotate(&source, &request)?;
+    let expected_title = format!("### 1) {}…", "가".repeat(23));
+
+    assert!(actual.contains(&expected_title));
+    assert!(actual.contains("\n\n설명\n\n"));
+    assert!(!actual.contains("부연 설명"));
+    Ok(())
+}
+
+#[test]
+fn numbers_endnote_titles_in_document_order() -> Result<(), Box<dyn std::error::Error>> {
+    let source = "첫 문장입니다.\n\n둘째 문장입니다.\n";
+    let first_start = source.find("첫 문장").ok_or("missing first selection")?;
+    let first_request = AnnotationRequest {
+        id: AnnotationId::parse("rp-first")?,
+        kind: NoteKind::Manual,
+        note: "첫 설명",
+        selection: first_start..first_start + "첫 문장".len(),
+    };
+    let first = annotate(source, &first_request)?;
+    let second_start = first.find("둘째 문장").ok_or("missing second selection")?;
+    let second_request = AnnotationRequest {
+        id: AnnotationId::parse("rp-second")?,
+        kind: NoteKind::Manual,
+        note: "둘째 설명",
+        selection: second_start..second_start + "둘째 문장".len(),
+    };
+
+    let actual = annotate(&first, &second_request)?;
+    let first_title = actual.find("### 1) 첫 문장").ok_or("missing first title")?;
+    let second_title = actual
+        .find("### 2) 둘째 문장")
+        .ok_or("missing second title")?;
+
+    assert!(first_title < second_title);
+    assert!(actual.contains("[rp-first]: #rp-note-first"));
+    assert!(actual.contains("[rp-second]: #rp-note-second"));
     Ok(())
 }
 
