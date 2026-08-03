@@ -1,0 +1,57 @@
+[package]
+name = "md-redpen"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.94"
+description = "A source-aware Markdown annotation TUI"
+license = "MIT"
+repository = "https://github.com/dhihm/MD_RedPen"
+
+[lib]
+name = "md_redpen"
+path = "src/lib.rs"
+
+[[bin]]
+name = "md-redpen"
+path = "src/main.rs"
+
+[dependencies]
+atomic-write-file = "0.3.0"
+clap = { version = "4.6.5", features = ["derive"] }
+command-group = "5.0.1"
+crossterm = "0.29.0"
+fs2 = "0.4.3"
+pulldown-cmark = "0.13.4"
+ratatui = { version = "0.30.2", default-features = false, features = [
+  "crossterm",
+  "unstable-rendered-line-info",
+] }
+thiserror = "2.0.19"
+tempfile = "3.27.0"
+unicode-segmentation = "1.13.3"
+unicode-width = "0.2.2"
+uuid = { version = "1.24.0", features = ["fast-rng", "v7"] }
+wait-timeout = "0.2.1"
+
+[dev-dependencies]
+assert_cmd = "2.2.2"
+predicates = "3.1.4"
+
+[lints.rust]
+rust_2018_idioms = { level = "deny", priority = -1 }
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+dbg_macro = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unwrap_used = "deny"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+strip = "symbols"

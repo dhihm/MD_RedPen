@@ -1,101 +1,220 @@
-# Markdown Annotator
+# MD RedPen
 
-A VS Code extension for adding annotations to markdown files with AI assistance.
+MD RedPen is a keyboard-first terminal UI for reviewing Markdown. It turns
+selected prose into a **yellow highlighter-style link** and stores explanations,
+revision suggestions, or supporting context as endnotes at the end of the same
+document.
 
-## Features
+The source text and its notes remain together in one Markdown file. MD RedPen
+does not require a database or sidecar file, and readers who do not use the
+application can still follow the links and read the notes in an ordinary
+Markdown renderer.
 
-- Add annotations to selected text
-- AI-powered explanations (Claude, Gemini, Codex)
-- Manual note input
-- Auto-generates `<mark data-note="">` tags for web display
+## How it works
 
-## Installation
+1. Open a Markdown file.
+2. Move between paragraphs with `Up` / `Down`, then select text with `v` and
+   `Left` / `Right`, drag over rendered prose with the mouse, or press `w` to
+   select the current word.
+3. Choose a note workflow:
+   - `a` writes a manual endnote.
+   - `c` asks a Codex CLI authenticated through a ChatGPT subscription for an
+     explanatory draft.
+4. Review and edit the draft.
+5. Press Enter to save the highlighted body link and its endnote together.
 
-### Option 1: Symlink (Development)
+The saved structure remains human-readable Markdown. This English-only example
+shows the link, anchor, and managed note block:
+
+```markdown
+<mark>[RDMA][rp-019fc502-c508-7750-ae68-dc807f695d5a]</mark> enables direct memory access.
+
+<!-- md-redpen:notes:start v=1 -->
+## MD RedPen Notes
+
+<a id="rp-note-019fc502-c508-7750-ae68-dc807f695d5a"></a>
+1. **Explanation**: A device can access memory without routing data through the CPU.
+
+[rp-019fc502-c508-7750-ae68-dc807f695d5a]: #rp-note-019fc502-c508-7750-ae68-dc807f695d5a
+<!-- md-redpen:notes:end -->
+```
+
+The `<mark>` element preserves the highlighter meaning, while the selected prose
+becomes a link to the matching `#rp-note-...` anchor.
+
+## Requirements
+
+- Rust 1.94 or later
+- A terminal with true-color support is recommended
+- To use Codex:
+  - The Codex CLI must be available on `PATH`.
+  - `codex login` must be authenticated with a ChatGPT subscription.
+
+Check the current authentication state with:
 
 ```bash
-ln -s /path/to/MD_RedPen ~/.vscode/extensions/markdown-annotator
+env -u CODEX_API_KEY -u OPENAI_API_KEY codex login status
 ```
 
-### Option 2: Copy
+A valid subscription login prints `Logged in using ChatGPT`.
+
+## Install and run
 
 ```bash
-cp -r /path/to/MD_RedPen ~/.vscode/extensions/markdown-annotator
+git clone https://github.com/dhihm/MD_RedPen.git
+cd MD_RedPen
+cargo install --path .
+md-redpen path/to/document.md
 ```
 
-Restart VS Code after installation.
+You can also run the application directly from the repository:
 
-## Usage
-
-### Keyboard Shortcuts
-
-| OS | Shortcut |
-|---|---|
-| macOS | `Cmd + Shift + M` |
-| Windows/Linux | `Ctrl + Shift + M` |
-
-### Steps
-
-1. Select text in a markdown file
-2. Press `Cmd + Shift + M` (or `Ctrl + Shift + M`)
-3. Choose an option:
-   - **Direct Input**: Write your own note
-   - **Claude**: Request explanation from Claude AI
-   - **Gemini**: Request explanation from Gemini AI
-   - **Codex**: Request explanation from Codex AI
-4. For AI options:
-   - Review/edit the prompt, then press Enter
-   - Wait for AI response
-   - Review/edit the response, then press Enter
-5. The text is wrapped with `<mark data-note="note">selected text</mark>`
-
-### Example
-
-**Before:**
-```markdown
-TransferEngine uses RDMA for data transfer.
+```bash
+cargo run -- path/to/document.md
 ```
 
-**After:**
-```markdown
-<mark data-note="RDMA enables direct memory access between computers without CPU involvement">TransferEngine uses RDMA for data transfer.</mark>
+Show the built-in help:
+
+```bash
+md-redpen --help
 ```
 
-## Requirements for AI Features
+## Key bindings
 
-To use AI features, you need to install and authenticate the CLI tools yourself.
-
-### Supported CLI Tools
-
-| Model | CLI | Installation |
+| Key | Mode | Action |
 |---|---|---|
-| Claude | `claude` | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) |
-| Gemini | `gemini` | [Gemini CLI](https://github.com/google-gemini/gemini-cli) |
-| Codex | `codex` | [Codex CLI](https://github.com/openai/codex) |
+| `Up` / `Down`, `k` / `j` | Browse | Move to the previous or next Markdown paragraph |
+| `Left` / `Right`, `h` / `l` | Browse, Visual | Move or extend the selection by one selectable grapheme |
+| Left-button drag | Browse, Visual | Select the exact rendered grapheme cells under the pointer |
+| `v` | Browse | Start a visual selection at the cursor |
+| `w` | Browse | Select the current word |
+| `a` | Visual | Write a manual endnote |
+| `c` | Visual | Request a Codex explanation |
+| Enter | Input, Review | Atomically save the reviewed endnote |
+| Enter | Browse | Follow a highlighted link to its endnote |
+| `b` | Browse | Return from an endnote to the body |
+| Escape | Visual, Input, Review, Codex | Cancel the current operation |
+| `q`, Ctrl-C | Browse | Restore the terminal and quit |
 
-### Setup Steps
+Korean, CJK, emoji, and combining characters are handled by Unicode grapheme
+boundaries and their actual terminal cell widths.
 
-1. Install the CLI tool for your preferred AI model
-2. Authenticate with your own account/API key
-3. Verify the CLI works by running it in terminal (e.g., `claude --help`)
+## Codex subscription integration
 
-**Note:** If CLI tools are not installed, AI features will show an error. You can still use "Direct Input" to write notes manually.
+MD RedPen never copies or stores an API key. It invokes the current user's
+`codex` executable with this contract:
 
-## Privacy & Security
+```text
+codex exec
+  --ephemeral
+  --ignore-user-config
+  --ignore-rules
+  --skip-git-repo-check
+  --sandbox read-only
+  --color never
+  -
+```
 
-| Item | Risk | Description |
-|---|---|---|
-| Data Collection | ✅ None | This extension does not collect or transmit any data |
-| External Connections | ✅ None | Only calls locally installed CLI tools |
-| Selected Text | ⚠️ User Responsibility | Text is sent to AI through your own authenticated CLI |
+- `codex login status` must explicitly confirm a ChatGPT login.
+- `CODEX_API_KEY` and `OPENAI_API_KEY` are removed from the child process.
+- Codex runs in an empty temporary working directory with a read-only sandbox.
+- Only the selected text and the source line containing it are sent to Codex.
+- Standard output and standard error are each limited to 64 KiB.
+- The default timeout is 120 seconds.
+- Escape, Ctrl-C, errors, and normal shutdown all terminate the Codex process
+  group.
+- Codex returns text only. MD RedPen remains the only process that modifies the
+  document.
 
-**Summary:** This extension is safe. It only acts as a bridge to your locally installed CLI tools. Any data sent to AI services goes through your own authenticated CLI, under your control and responsibility.
+Set a model only when the subscription requires an explicit model name:
 
-## Web Display
+```bash
+MD_REDPEN_CODEX_MODEL=<subscription-available-model> md-redpen document.md
+```
 
-Annotations added with this extension are displayed as highlights on Jekyll blogs.
-Visitors can click the highlight to view the note in a popup.
+Tests and internal wrappers can override the executable path with
+`MD_REDPEN_CODEX_BIN`.
+
+> The selected text and the rest of its source line are sent to the model
+> provider. Do not select a line that contains confidential information.
+
+## Data safety
+
+- The body link and endnote are created in one save transaction.
+- Saving stops if another editor changes the file bytes after MD RedPen opens
+  it.
+- Saving never truncates the original file in place. A temporary file in the
+  same directory is synchronized and atomically renamed.
+- Selections that overlap an existing Markdown link or MD RedPen highlight are
+  rejected.
+- A Codex draft is not written until it is accepted with Enter on the Review
+  screen.
+- Parsing, selection, Codex, and save failures preserve the original file
+  bytes.
+- Managed-note markers shown inside fenced or inline code are treated as
+  examples, not as real note boundaries.
+
+## Selection limits
+
+MD RedPen rejects ranges that could damage Markdown structure:
+
+- A range spanning multiple lines or Markdown blocks
+- A range overlapping an existing link, image, or inline-code span
+- A range overlapping an existing MD RedPen highlight
+- A range inside the managed `md-redpen:notes` block at the end of the document
+
+Nested highlights are not supported. Mouse selection passes through the same
+source-range safety checks as keyboard selection.
+
+## Terminal accessibility
+
+- Modes, status text, and underlines communicate state without relying on color
+  alone.
+- Every selection, navigation, and save action is available without a mouse.
+- `NO_COLOR=1` replaces highlighter and selection colors with reverse and bold
+  styles.
+- Terminals smaller than 50x12 show a size error while keeping the quit key
+  available.
+- Persisted highlights use a marker-yellow background with dark foreground
+  text.
+
+Visual rules and color tokens are defined in [`DESIGN.md`](DESIGN.md).
+
+## Development and verification
+
+```bash
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test
+cargo build --release
+```
+
+The test suite covers:
+
+- Source-byte mapping for Korean, combining characters, and emoji
+- Exact CJK mouse hit testing and paragraph navigation
+- Clickable `<mark>` links and managed-endnote serialization
+- Rejection of existing links, inline code, images, and nested highlights
+- Parser-aware handling of literal managed-note markers in code examples
+- External file conflict detection and byte preservation
+- CLI help and typed path errors
+- Safe Codex arguments, standard-input prompts, and API-key removal
+- The invariant that no file changes occur before Codex review
+
+## Migration from the VS Code prototype
+
+The repository originally contained an experimental VS Code extension. It ran
+a user-configurable shell command and replaced selected text with
+`<mark data-note>` directly.
+
+The current application is a standalone Rust TUI. The old `extension.js` and
+`package.json` files have been removed, and the project no longer depends on VS
+Code command registration or a Node.js runtime.
+
+Documents created by the prototype are not converted automatically. Commit or
+back up those files first, then migrate each note manually to the current
+link-and-endnote format.
 
 ## License
 
-MIT License
+[MIT](LICENSE)
